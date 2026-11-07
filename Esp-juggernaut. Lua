@@ -1,0 +1,35 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local MIN_HEALTH = 200
+local MAX_HEALTH = 5000
+local DETECTION_INTERVAL = 2
+local MAX_DISTANCE = 3000
+
+local markedPlayers = {}
+
+local function removeMark(player)
+local data = markedPlayers[player]
+if not data then return end
+
+if data.highlight then data.highlight:Destroy() end if data.billboard then data.billboard:Destroy() end markedPlayers[player] = nil 
+
+end
+
+local function markPlayer(player, character)
+if markedPlayers[player] then return end
+
+local humanoid = character:FindFirstChildOfClass("Humanoid") local head = character:FindFirstChild("Head") if not humanoid or not head then return end local highlight = Instance.new("Highlight") highlight.Name = "PlayerHealthHighlight" highlight.FillColor = Color3.fromRGB(255, 0, 0) highlight.OutlineColor = Color3.fromRGB(255, 255, 255) highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop highlight.Parent = character local billboard = Instance.new("BillboardGui") billboard.Name = "PlayerHealthTag" billboard.Adornee = head billboard.Size = UDim2.fromOffset(180, 55) billboard.StudsOffset = Vector3.new(0, 3, 0) billboard.AlwaysOnTop = true billboard.MaxDistance = MAX_DISTANCE billboard.Parent = head local nameLabel = Instance.new("TextLabel") nameLabel.Size = UDim2.new(1, 0, 0.6, 0) nameLabel.BackgroundTransparency = 1 nameLabel.Text = player.DisplayName nameLabel.TextColor3 = Color3.fromRGB(255, 255, 0) nameLabel.TextSize = 18 nameLabel.Font = Enum.Font.GothamBold nameLabel.TextStrokeTransparency = 0 nameLabel.Parent = billboard local healthLabel = Instance.new("TextLabel") healthLabel.Position = UDim2.new(0, 0, 0.6, 0) healthLabel.Size = UDim2.new(1, 0, 0.4, 0) healthLabel.BackgroundTransparency = 1 healthLabel.TextColor3 = Color3.fromRGB(255, 0, 0) healthLabel.TextSize = 13 healthLabel.Font = Enum.Font.Gotham healthLabel.TextStrokeTransparency = 0 healthLabel.Parent = billboard local function updateHealth() if humanoid.Parent then healthLabel.Text = math.floor(humanoid.Health) .. " HP" end end updateHealth() humanoid.HealthChanged:Connect(updateHealth) humanoid.Died:Connect(function() removeMark(player) end) markedPlayers[player] = { highlight = highlight, billboard = billboard, character = character } 
+
+end
+
+while true do
+for _, player in ipairs(Players:GetPlayers()) do
+if player ~= LocalPlayer then
+local character = player.Character
+local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+if not markedPlayers[player] then if humanoid and humanoid.Health >= MIN_HEALTH and humanoid.Health <= MAX_HEALTH then markPlayer(player, character) end end end end task.wait(DETECTION_INTERVAL) 
+
+end
+
